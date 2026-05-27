@@ -88,6 +88,59 @@ matching `name`.
 - Tailwind v4 uses `@theme` in `app/globals.css`; there is no
   `tailwind.config.js`.
 
+## Video link import (Studio · From video tab)
+
+Direct `.mp4` / `.webm` URLs and uploaded MP4 files work with **zero
+configuration**. Importing from social platforms (TikTok, Instagram,
+YouTube, X, Reddit, etc.) requires a **cobalt** instance because those
+platforms actively block scrapers — there is no way to do this reliably
+from a Vercel function alone.
+
+The app speaks cobalt's native protocol, so any cobalt instance works.
+
+### Local dev (one command)
+
+```bash
+cd cobalt && docker compose up -d
+```
+
+Then in `.env.local`:
+
+```
+VIDEO_INGEST_RESOLVER_URL=http://localhost:9000/
+```
+
+Restart `npm run dev`. Paste any TikTok/IG/YT URL in Studio → Video →
+*From video* and hit *Import*.
+
+### Production (Railway, ~3 min, free tier)
+
+1. Sign up at [railway.app](https://railway.app), click **New Project**
+   → **Deploy from Docker Image**.
+2. Image: `ghcr.io/imputnet/cobalt:10`
+3. Settings → Networking → **Generate Domain**, copy the public URL.
+4. Variables → add `API_URL=https://<your-railway-domain>.up.railway.app/`
+   (use the URL from step 3, with trailing slash). Redeploy.
+5. In your Vercel project → Settings → Environment Variables, add:
+   ```
+   VIDEO_INGEST_RESOLVER_URL=https://<your-railway-domain>.up.railway.app/
+   ```
+6. Redeploy Vercel. Done.
+
+Same shape works on Render, Fly.io, Hetzner, your own VPS — anything
+that can run a Docker container. Cobalt is AGPL-licensed.
+
+### Why not just `fetch()` the URL directly?
+
+TikTok, Instagram, and YouTube serve HTML (and an obfuscated, auth-gated
+video manifest) when you `fetch()` a video URL. There is no public
+endpoint that returns the raw MP4 without either a logged-in browser
+session or a project that re-implements each platform's anti-bot
+protocol — which is exactly what cobalt does.
+
+If you don't want to host cobalt, the **Upload MP4** button in the same
+tab works for any video up to 200 MB.
+
 ## What's intentionally TODO
 
 - **Stripe**: subscription checkout + webhook (table is ready).

@@ -1,0 +1,31 @@
+# Local cobalt instance for the "From video" tab in Studio.
+#
+# Quick start:
+#   1. cd cobalt && docker compose up -d
+#   2. Add to .env.local:
+#        VIDEO_INGEST_RESOLVER_URL=http://localhost:9000/
+#   3. Restart `npm run dev`.
+#
+# This only resolves links when the app runs on YOUR machine.
+# To support imports from your deployed Vercel app, deploy this same
+# compose file (or `ghcr.io/imputnet/cobalt:10` directly) to Railway /
+# Render / Fly / DigitalOcean and set VIDEO_INGEST_RESOLVER_URL in
+# Vercel to that public URL. See README.md → "Video link import".
+#
+# cobalt is AGPL-licensed — see https://github.com/imputnet/cobalt
+
+services:
+  cobalt-api:
+    image: ghcr.io/imputnet/cobalt:10
+    container_name: aurum-cobalt
+    init: true
+    read_only: true
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      API_URL: "http://localhost:9000/"
+      # Add an API key here to require it (see README of cobalt repo).
+      # API_KEY_URL: "file:///etc/keys.json"
+    labels:
+      - com.centurylinklabs.watchtower.scope=cobalt
