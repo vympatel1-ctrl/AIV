@@ -61,14 +61,51 @@ type CobaltResponse = {
  * For custom resolvers we also accept a flat `{ url }` response, so you can
  * still point this at RapidAPI / Apify / a hand-rolled endpoint.
  */
-async function resolveSocialUrl(input: string): Promise<string> {
-  const endpoint = process.env.VIDEO_INGEST_RESOLVER_URL;
-  if (!endpoint) {
+/**
+ * Read + validate the resolver endpoint from env. Forgiving: trims
+ * whitespace, prepends `https://` if missing, and gives a *useful* error
+ * message when the value is malformed (rather than letting fetch surface
+ * Node's cryptic "Failed to parse URL from <value>").
+ */
+function readResolverEndpoint(): string {
+  const raw = (process.env.VIDEO_INGEST_RESOLVER_URL ?? "").trim();
+  if (!raw) {
     throw new IngestError(
       "We can't import this link automatically yet. Set VIDEO_INGEST_RESOLVER_URL to a cobalt instance (see README), or download the MP4 and upload it here.",
       501
     );
   }
+
+  // Common Vercel mistake: the user pasted the variable *name* into the value
+  // field, or used a Railway-style ${{ ... }} reference that didn't interpolate.
+  if (
+    /^VIDEO_INGEST_RESOLVER_URL$/i.test(raw) ||
+    raw.includes("${{") ||
+    raw.includes("$VIDEO_INGEST_RESOLVER_URL")
+  ) {
+    throw new IngestError(
+      `VIDEO_INGEST_RESOLVER_URL is set but the value is "${raw.slice(0, 60)}". Replace it with the full https URL of your cobalt instance, e.g. https://your-cobalt.up.railway.app/`,
+      500
+    );
+  }
+
+  const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const u = new URL(candidate);
+    if (u.protocol !== "https:" && u.protocol !== "http:") {
+      throw new Error("bad protocol");
+    }
+    return u.toString();
+  } catch {
+    throw new IngestError(
+      `VIDEO_INGEST_RESOLVER_URL is not a valid URL (got: "${raw.slice(0, 80)}"). Set it to your cobalt instance, e.g. https://your-cobalt.up.railway.app/`,
+      500
+    );
+  }
+}
+
+async function resolveSocialUrl(input: string): Promise<string> {
+  const endpoint = readResolverEndpoint();
   const headers: Record<string, string> = {
     "content-type": "application/json",
     accept: "application/json",
@@ -87,12 +124,21 @@ async function resolveSocialUrl(input: string): Promise<string> {
     videoQuality: "1080",
   });
 
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers,
-    body,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body,
+      cache: "no-store",
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new IngestError(
+      `Couldn't reach the resolver at ${endpoint}. Check that the cobalt instance is running and the URL is correct (${msg}).`,
+      502
+    );
+  }
   const json = (await res.json().catch(() => ({}))) as CobaltResponse;
 
   if (!res.ok) {
