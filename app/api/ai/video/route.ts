@@ -1,0 +1,73 @@
+import { NextResponse, type NextRequest } from "next/server";
+
+import { getVideoProvider } from "@/lib/ai/video";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { createGeneration } from "@/lib/db/generations";
+import { deductCredits } from "@/lib/db/usage";
+import { creditsFor } from "@/lib/credits";
+import { VideoRequestSchema } from "@/lib/validators";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+/**
+ * POST /api/ai/video — submits a video job to the active provider.
+ * Returns a generation row id; the client polls /api/ai/video/[id]/status.
+ */
+export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  const json = await req.json().catch(() => null);
+  const parsed = VideoRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+  const input = parsed.data;
+
+  const credits = creditsFor("video", 1);
+  const balance = await deductCredits(user.userId, credits);
+  if (!balance.ok) {
+    return NextResponse.json(
+      { error: "Insufficient credits", remaining: balance.remaining },
+      { status: 402 }
+    );
+  }
+
+  const provider = getVideoProvider();
+  try {
+    const submission = await provider.submit({
+      mode: input.mode,
+      prompt: input.prompt,
+      imageUrl: input.imageUrl ?? undefined,
+      aspectRatio: input.aspectRatio,
+      durationSeconds: input.durationSeconds,
+      model: input.model,
+    });
+
+    const gen = await createGeneration({
+      user_id: user.userId,
+      project_id: input.projectId ?? null,
+      kind: "video",
+      provider: submission.provider,
+      model: submission.model,
+      prompt: input,
+      credits_cost: credits,
+      status: "processing",
+      external_id: submission.externalId,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      generationId: gen?.id ?? null,
+      externalId: submission.externalId,
+      provider: submission.provider,
+      model: submission.model,
+      remaining: balance.remaining,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Submission failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
