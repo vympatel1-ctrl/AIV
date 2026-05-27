@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   FileTextIcon,
   ImageIcon,
@@ -35,7 +36,10 @@ export function AssetCard({ asset }: { asset: Asset }) {
       : null);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card transition-all hover:border-primary/40">
+    <Link
+      href={`/library/${asset.id}`}
+      className="group relative flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card transition-all hover:border-primary/40"
+    >
       <div className="relative aspect-video w-full overflow-hidden bg-secondary">
         {preview ? (
           <Image
@@ -63,6 +67,13 @@ export function AssetCard({ asset }: { asset: Asset }) {
           <Icon className="size-3" />
           {LABELS[asset.type]}
         </div>
+        {asset.type === "video" && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <div className="flex size-12 items-center justify-center rounded-full border border-white/30 bg-black/50 backdrop-blur">
+              <PlayIcon className="size-5 fill-white text-white" />
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-1 px-4 py-3">
         <h3 className="truncate text-sm font-medium">
@@ -72,7 +83,7 @@ export function AssetCard({ asset }: { asset: Asset }) {
           {formatRelative(asset.created_at)}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
 

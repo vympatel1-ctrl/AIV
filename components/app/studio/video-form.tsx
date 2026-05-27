@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import {
   CheckIcon,
+  FilmIcon,
   ImageIcon,
+  LinkIcon,
   Loader2Icon,
   PlayIcon,
   SparklesIcon,
@@ -36,8 +38,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatRelative } from "@/lib/utils";
 
-type Mode = "image-to-video" | "text-to-video" | "video-to-video";
+type Mode = "image-to-video" | "text-to-video" | "from-video";
 type VideoProvider = "fal" | "runway";
+
+type BrandKitOption = {
+  id: string;
+  name: string;
+  primary_color: string | null;
+  accent_color: string | null;
+  font_family: string | null;
+  logo_url: string | null;
+};
 
 type VideoStatusBody = {
   status: "queued" | "processing" | "succeeded" | "failed";
@@ -52,25 +63,41 @@ type VideoStatusBody = {
   };
 };
 
+type VersionMode =
+  | "image-to-video"
+  | "text-to-video"
+  | "from-video"
+  | "video-to-video";
+
 type VideoVersion = {
   id: string;
   generationId: string | null;
   prompt: string;
   videoUrl: string;
   createdAt: string;
-  mode: Mode;
+  mode: VersionMode;
 };
 
 export function VideoForm({
   projectId,
   defaultProvider,
+  brandKits = [],
+  socialIngestEnabled = false,
 }: {
   projectId: string | null;
   defaultProvider: VideoProvider;
+  brandKits?: BrandKitOption[];
+  socialIngestEnabled?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>("image-to-video");
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [sourceVideoUrl, setSourceVideoUrl] = useState("");
+  const [sourceLinkInput, setSourceLinkInput] = useState("");
+  const [sourceLabel, setSourceLabel] = useState<string | null>(null);
+  const [isIngesting, setIsIngesting] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [brandKitId, setBrandKitId] = useState<string>("");
   const [aspect, setAspect] = useState<"9:16" | "16:9" | "1:1">("9:16");
   const [duration, setDuration] = useState(5);
   const [provider, setProvider] = useState<VideoProvider>(defaultProvider);
@@ -85,6 +112,7 @@ export function VideoForm({
   const [refinePrompt, setRefinePrompt] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Poll for the in-flight generation.
   useEffect(() => {
@@ -138,6 +166,99 @@ export function VideoForm({
     } finally {
       setIsUploading(false);
     }
+  }
+
+  async function handleVideoFile(file: File) {
+    if (file.size > 200 * 1024 * 1024) {
+      toast.error("Video too large (max 200 MB).");
+      return;
+    }
+    setIsUploadingVideo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `Upload failed (${res.status})`);
+      setSourceVideoUrl(json.url);
+      setSourceLabel(file.name);
+      toast.success("Video uploaded.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setIsUploadingVideo(false);
+    }
+  }
+
+  async function ingestSourceLink() {
+    const url = sourceLinkInput.trim();
+    if (!url) {
+      toast.error("Paste a video link first.");
+      return;
+    }
+    setIsIngesting(true);
+    try {
+      const res = await fetch("/api/ai/video/ingest", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `Ingest failed (${res.status})`);
+      setSourceVideoUrl(json.videoUrl);
+      setSourceLabel(`${json.source ?? "link"} · ${(json.bytes / 1_000_000).toFixed(1)} MB`);
+      toast.success("Video imported.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ingest failed");
+    } finally {
+      setIsIngesting(false);
+    }
+  }
+
+  function startFromVideoGeneration() {
+    if (!sourceVideoUrl) {
+      toast.error("Import or upload a source video first.");
+      return;
+    }
+    if (prompt.trim().length < 2 && !brandKitId) {
+      toast.error("Pick a brand kit or describe the change you want.");
+      return;
+    }
+    setStatus(null);
+    setGenerationId(null);
+    setVersions([]);
+    setLineageId(null);
+    setActiveVersionId(null);
+    setProvider("runway");
+    startSubmit(async () => {
+      try {
+        const res = await fetch("/api/ai/video", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            mode: "video-to-video",
+            prompt: prompt.trim() || "Match the source pacing and motion.",
+            videoUrl: sourceVideoUrl,
+            sourceUrl: sourceLinkInput.trim() || null,
+            brandKitId: brandKitId || null,
+            aspectRatio: aspect,
+            durationSeconds: duration,
+            provider: "runway",
+            projectId,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? `Failed (${res.status})`);
+        setGenerationId(json.generationId);
+        setLineageId(json.lineageId ?? null);
+        setStatus({ status: "queued" });
+        toast.message("Re-rendering with your branding…", {
+          description: "Runway is processing — typically 30s–3 minutes.",
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed");
+      }
+    });
   }
 
   function startInitialGeneration() {
@@ -260,14 +381,18 @@ export function VideoForm({
                 value={mode}
                 onValueChange={(v) => setMode(v as Mode)}
               >
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="image-to-video">
                     <ImageIcon className="size-3.5" />
-                    Image to video
+                    Image
                   </TabsTrigger>
                   <TabsTrigger value="text-to-video">
                     <SparklesIcon className="size-3.5" />
-                    Text to video
+                    Text
+                  </TabsTrigger>
+                  <TabsTrigger value="from-video">
+                    <FilmIcon className="size-3.5" />
+                    From video
                   </TabsTrigger>
                 </TabsList>
 
@@ -318,15 +443,159 @@ export function VideoForm({
                 </TabsContent>
 
                 <TabsContent value="text-to-video" />
+
+                <TabsContent value="from-video" className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Reference video</Label>
+                    <input
+                      ref={videoFileInputRef}
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm,video/x-m4v"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleVideoFile(f);
+                      }}
+                    />
+                    {sourceVideoUrl ? (
+                      <div className="overflow-hidden rounded-md border border-border/60 bg-black">
+                        <video
+                          src={sourceVideoUrl}
+                          className="aspect-video w-full"
+                          controls
+                          muted
+                          playsInline
+                        />
+                        <div className="flex items-center justify-between gap-2 border-t border-border/60 bg-card p-2 text-xs">
+                          <span className="line-clamp-1 text-muted-foreground">
+                            Imported · {sourceLabel ?? "video"}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSourceVideoUrl("");
+                              setSourceLabel(null);
+                              setSourceLinkInput("");
+                            }}
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Paste TikTok / Instagram / YouTube / MP4 URL"
+                            value={sourceLinkInput}
+                            onChange={(e) => setSourceLinkInput(e.target.value)}
+                            disabled={isIngesting}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={ingestSourceLink}
+                            disabled={isIngesting || !sourceLinkInput.trim()}
+                          >
+                            {isIngesting ? (
+                              <Loader2Icon className="size-4 animate-spin" />
+                            ) : (
+                              <LinkIcon className="size-4" />
+                            )}
+                            Import
+                          </Button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => videoFileInputRef.current?.click()}
+                          disabled={isUploadingVideo}
+                          className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border/60 bg-card text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+                        >
+                          {isUploadingVideo ? (
+                            <Loader2Icon className="size-5 animate-spin" />
+                          ) : (
+                            <UploadIcon className="size-5" />
+                          )}
+                          {isUploadingVideo
+                            ? "Uploading…"
+                            : "or upload an MP4 (max 200 MB)"}
+                        </button>
+                        {!socialIngestEnabled && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Direct video URLs work out of the box. To import
+                            from TikTok / Instagram / YouTube directly, set{" "}
+                            <code className="rounded bg-muted px-1">
+                              VIDEO_INGEST_RESOLVER_URL
+                            </code>{" "}
+                            on the server.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Brand kit</Label>
+                    <Select
+                      value={brandKitId || "none"}
+                      onValueChange={(v) =>
+                        setBrandKitId(v === "none" ? "" : v)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="No brand kit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No brand kit</SelectItem>
+                        {brandKits.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.name}
+                            {b.primary_color
+                              ? ` · ${b.primary_color}`
+                              : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {brandKits.length === 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Create one under{" "}
+                        <a
+                          href="/brand-kits"
+                          className="underline underline-offset-2"
+                        >
+                          Brand kits
+                        </a>{" "}
+                        to inject your logo and colors.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] leading-relaxed text-amber-200/90">
+                    Heads up: only re-render videos you have rights to. The
+                    output keeps the source pacing but swaps identifying
+                    details for your brand — not a 1:1 copy.
+                  </div>
+                </TabsContent>
               </Tabs>
 
               <div className="space-y-2">
-                <Label htmlFor="prompt">Motion / scene prompt</Label>
+                <Label htmlFor="prompt">
+                  {mode === "from-video"
+                    ? "Creative direction (optional)"
+                    : "Motion / scene prompt"}
+                </Label>
                 <Textarea
                   id="prompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Slow push-in, soft light, product turns subtly toward camera."
+                  placeholder={
+                    mode === "from-video"
+                      ? "Swap the product for my matcha tin. Warmer light. Add my logo as a corner bug at the end."
+                      : "Slow push-in, soft light, product turns subtly toward camera."
+                  }
                   rows={4}
                 />
               </div>
@@ -370,8 +639,9 @@ export function VideoForm({
               <div className="space-y-2">
                 <Label>Provider</Label>
                 <Select
-                  value={provider}
+                  value={mode === "from-video" ? "runway" : provider}
                   onValueChange={(v) => setProvider(v as VideoProvider)}
+                  disabled={mode === "from-video"}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -383,7 +653,11 @@ export function VideoForm({
                     <SelectItem value="fal">fal.ai · veo3 / kling</SelectItem>
                   </SelectContent>
                 </Select>
-                {provider === "fal" ? (
+                {mode === "from-video" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Video-to-video runs on Runway gen4_aleph.
+                  </p>
+                ) : provider === "fal" ? (
                   <p className="text-xs text-muted-foreground">
                     Refining requires Runway. Switch after the first render to
                     keep iterating.
@@ -393,7 +667,11 @@ export function VideoForm({
 
               <Button
                 type="button"
-                onClick={startInitialGeneration}
+                onClick={
+                  mode === "from-video"
+                    ? startFromVideoGeneration
+                    : startInitialGeneration
+                }
                 disabled={isWorking}
                 variant="gold"
                 size="lg"
@@ -402,12 +680,14 @@ export function VideoForm({
                 {isWorking ? (
                   <>
                     <Loader2Icon className="animate-spin" />
-                    Generating…
+                    {mode === "from-video" ? "Re-rendering…" : "Generating…"}
                   </>
                 ) : (
                   <>
                     <SparklesIcon />
-                    Generate video
+                    {mode === "from-video"
+                      ? "Re-render with my brand"
+                      : "Generate video"}
                   </>
                 )}
               </Button>

@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 
 import { getVideoProvider } from "@/lib/ai/video";
+import { buildVideoRemixPrompt } from "@/lib/ai/prompts";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getBrandKit } from "@/lib/db/brand-kits";
 import { createGeneration } from "@/lib/db/generations";
 import { deductCredits, refundCredits } from "@/lib/db/usage";
 import { creditsFor } from "@/lib/credits";
@@ -43,11 +45,48 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // If the caller supplied a brandKitId on a video-to-video job, rewrite the
+  // prompt server-side using the trusted brand record. The user's free-form
+  // text becomes the "creative direction" inside the remix prompt.
+  let effectivePrompt = input.prompt;
+  let brandSnapshot: {
+    id: string;
+    name: string;
+    primary_color: string | null;
+    accent_color: string | null;
+    font_family: string | null;
+    has_logo: boolean;
+  } | null = null;
+
+  if (input.mode === "video-to-video" && input.brandKitId) {
+    const kit = await getBrandKit(user.userId, input.brandKitId);
+    if (kit) {
+      brandSnapshot = {
+        id: kit.id,
+        name: kit.name,
+        primary_color: kit.primary_color,
+        accent_color: kit.accent_color,
+        font_family: kit.font_family,
+        has_logo: Boolean(kit.logo_url),
+      };
+      effectivePrompt = buildVideoRemixPrompt({
+        userPrompt: input.prompt,
+        brand: {
+          name: kit.name,
+          primaryColor: kit.primary_color,
+          accentColor: kit.accent_color,
+          fontFamily: kit.font_family,
+          hasLogo: Boolean(kit.logo_url),
+        },
+      });
+    }
+  }
+
   const provider = getVideoProvider(input.provider ?? null);
   try {
     const submission = await provider.submit({
       mode: input.mode,
-      prompt: input.prompt,
+      prompt: effectivePrompt,
       imageUrl: input.imageUrl ?? undefined,
       videoUrl: input.videoUrl ?? undefined,
       aspectRatio: input.aspectRatio,
@@ -64,6 +103,10 @@ export async function POST(req: NextRequest) {
       model: submission.model,
       prompt: {
         ...input,
+        prompt: effectivePrompt,
+        userPrompt: input.prompt,
+        brand: brandSnapshot,
+        sourceUrl: input.sourceUrl ?? null,
         lineageId,
         parentAssetId: input.parentAssetId ?? null,
       },

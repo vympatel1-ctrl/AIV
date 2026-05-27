@@ -59,6 +59,18 @@ export const VideoRequestSchema = z.object({
   parentAssetId: z.string().uuid().nullable().optional(),
   lineageId: z.string().uuid().nullable().optional(),
   projectId: z.string().uuid().nullable().optional(),
+  brandKitId: z.string().uuid().nullable().optional(),
+  sourceUrl: z.string().url().nullable().optional(),
+});
+
+/**
+ * URL → playable MP4 in our storage.
+ * Accepts a direct video URL (mp4/webm/mov) or a social platform URL
+ * (TikTok / Instagram / YouTube / X / Facebook). Platform URLs require
+ * VIDEO_INGEST_PROVIDER to be configured server-side.
+ */
+export const VideoIngestRequestSchema = z.object({
+  url: z.string().url(),
 });
 
 export const FlyerRequestSchema = z.object({
@@ -83,5 +95,6 @@ export const VoiceoverRequestSchema = z.object({
 export type CopyRequestInput = z.infer<typeof CopyRequestSchema>;
 export type ImageRequestInput = z.infer<typeof ImageRequestSchema>;
 export type VideoRequestInput = z.infer<typeof VideoRequestSchema>;
+export type VideoIngestRequestInput = z.infer<typeof VideoIngestRequestSchema>;
 export type FlyerRequestInput = z.infer<typeof FlyerRequestSchema>;
 export type VoiceoverRequestInput = z.infer<typeof VoiceoverRequestSchema>;

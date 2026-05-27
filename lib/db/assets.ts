@@ -143,6 +143,22 @@ export async function deleteAsset(userId: string, id: string) {
   if (error) throw error;
 }
 
+export async function renameAsset(
+  userId: string,
+  id: string,
+  title: string
+): Promise<void> {
+  const sb = safeClient();
+  if (!sb) throw new Error("Supabase not configured");
+  const trimmed = title.trim().slice(0, 200) || null;
+  const { error } = await sb
+    .from("assets")
+    .update({ title: trimmed, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
 export async function getAsset(
   userId: string,
   id: string

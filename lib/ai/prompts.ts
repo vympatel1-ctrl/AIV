@@ -91,6 +91,52 @@ export function buildImagePrompt(input: ImagePromptInput): string {
   return parts.join(" ");
 }
 
+export type VideoRemixBrand = {
+  name?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
+  fontFamily?: string | null;
+  hasLogo?: boolean;
+};
+
+/**
+ * Build a strong video-to-video prompt for re-rendering a reference clip
+ * with the user's branding. Designed to bias the model toward *structure
+ * and pacing* of the source while replacing identifying details with the
+ * user's brand — keeping us on the right side of "inspired by" rather than
+ * a 1:1 reskin.
+ */
+export function buildVideoRemixPrompt(input: {
+  userPrompt?: string;
+  brand?: VideoRemixBrand;
+}): string {
+  const lines: string[] = [];
+  lines.push(
+    "Re-render this reference video with the brand identity below. Match the original's pacing, framing, and motion, but swap product, on-screen text, and color treatment to match the brand."
+  );
+
+  const brand = input.brand;
+  if (brand?.name) lines.push(`Brand name on screen: ${brand.name}.`);
+  if (brand?.hasLogo)
+    lines.push(
+      "Composite the user's logo as a small bug in a clean corner; it must remain crisp and readable on every frame."
+    );
+  if (brand?.primaryColor)
+    lines.push(`Primary brand color ${brand.primaryColor}.`);
+  if (brand?.accentColor) lines.push(`Accent color ${brand.accentColor}.`);
+  if (brand?.fontFamily)
+    lines.push(`On-screen typography: ${brand.fontFamily}-style.`);
+
+  if (input.userPrompt && input.userPrompt.trim().length > 0) {
+    lines.push(`Creative direction: ${input.userPrompt.trim()}`);
+  }
+
+  lines.push(
+    "Keep the look premium and editorial. Do not reproduce identifying faces, logos, or trademarks from the source — replace them with the brand above."
+  );
+  return lines.join(" ");
+}
+
 export function buildFlyerPrompt(input: {
   type: "business_card" | "flyer";
   prompt: string;
