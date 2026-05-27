@@ -4,7 +4,7 @@ import { DEFAULT_MODEL_ID, generateVoiceover } from "@/lib/ai/elevenlabs";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createGeneration, updateGeneration } from "@/lib/db/generations";
 import { createAsset } from "@/lib/db/assets";
-import { deductCredits, logUsage } from "@/lib/db/usage";
+import { deductCredits, logUsage, refundCredits } from "@/lib/db/usage";
 import { creditsFor, costFor } from "@/lib/credits";
 import { VoiceoverRequestSchema } from "@/lib/validators";
 import { uploadToAssets } from "@/lib/storage";
@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
       remaining: balance.remaining,
     });
   } catch (err) {
+    console.error("[/api/ai/voiceover] failed", err);
     const message = err instanceof Error ? err.message : "Generation failed";
     if (gen) {
       await updateGeneration(gen.id, {
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest) {
         completed_at: new Date().toISOString(),
       });
     }
+    await refundCredits(user.userId, credits).catch(() => {});
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

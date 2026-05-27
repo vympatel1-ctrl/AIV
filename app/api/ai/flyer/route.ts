@@ -5,7 +5,7 @@ import { buildFlyerPrompt } from "@/lib/ai/prompts";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createGeneration, updateGeneration } from "@/lib/db/generations";
 import { createAsset } from "@/lib/db/assets";
-import { deductCredits, logUsage } from "@/lib/db/usage";
+import { deductCredits, logUsage, refundCredits } from "@/lib/db/usage";
 import { creditsFor, costFor } from "@/lib/credits";
 import { FlyerRequestSchema } from "@/lib/validators";
 import {
@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
       remaining: balance.remaining,
     });
   } catch (err) {
+    console.error("[/api/ai/flyer] failed", err);
     const message = err instanceof Error ? err.message : "Generation failed";
     if (gen) {
       await updateGeneration(gen.id, {
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest) {
         completed_at: new Date().toISOString(),
       });
     }
+    await refundCredits(user.userId, credits).catch(() => {});
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -28,8 +28,10 @@ import { AspectRatioPicker } from "@/components/app/aspect-ratio-picker";
 import { type AspectRatio } from "@/lib/platform-presets";
 import type { Asset } from "@/types/database";
 
+const AUTO_SCENE = "__auto__";
+
 const SCENES = [
-  { value: "", label: "Auto" },
+  { value: AUTO_SCENE, label: "Auto" },
   { value: "luxury studio still life", label: "Luxury still life" },
   { value: "outdoor lifestyle ad", label: "Outdoor lifestyle" },
   { value: "minimal product packshot", label: "Packshot" },
@@ -39,7 +41,7 @@ const SCENES = [
 
 export function ImageForm({ projectId }: { projectId: string | null }) {
   const [prompt, setPrompt] = useState("");
-  const [scene, setScene] = useState("");
+  const [scene, setScene] = useState<string>(AUTO_SCENE);
   const [product, setProduct] = useState("");
   const [primaryColor, setPrimaryColor] = useState("");
   const [accentColor, setAccentColor] = useState("");
@@ -61,7 +63,7 @@ export function ImageForm({ projectId }: { projectId: string | null }) {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             prompt,
-            scene: scene || undefined,
+            scene: scene && scene !== AUTO_SCENE ? scene : undefined,
             product: product || undefined,
             primaryColor: primaryColor || undefined,
             accentColor: accentColor || undefined,
@@ -108,7 +110,7 @@ export function ImageForm({ projectId }: { projectId: string | null }) {
               </SelectTrigger>
               <SelectContent>
                 {SCENES.map((s) => (
-                  <SelectItem key={s.value || "auto"} value={s.value}>
+                  <SelectItem key={s.value} value={s.value}>
                     {s.label}
                   </SelectItem>
                 ))}

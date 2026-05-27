@@ -49,4 +49,4 @@ export const DEFAULT_VIDEO_MODEL =
   "fal-ai/kling-video/v2.5-turbo/pro/image-to-video";
 
 export const DEFAULT_TEXT_VIDEO_MODEL =
-  process.env.DEFAULT_TEXT_VIDEO_MODEL ?? "fal-ai/kling-video/v2.5-turbo/pro";
+  process.env.DEFAULT_TEXT_VIDEO_MODEL ?? "fal-ai/veo3/fast";

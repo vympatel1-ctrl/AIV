@@ -75,6 +75,27 @@ export async function listUserUsage(
   return data ?? [];
 }
 
+export async function refundCredits(
+  userId: string,
+  amount: number
+): Promise<void> {
+  const sb = safeClient();
+  if (!sb) return;
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("credits")
+    .eq("id", userId)
+    .single();
+  if (!profile) return;
+  await sb
+    .from("profiles")
+    .update({
+      credits: profile.credits + amount,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+}
+
 export async function deductCredits(
   userId: string,
   amount: number

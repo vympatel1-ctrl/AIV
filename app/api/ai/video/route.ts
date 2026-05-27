@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getVideoProvider } from "@/lib/ai/video";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createGeneration } from "@/lib/db/generations";
-import { deductCredits } from "@/lib/db/usage";
+import { deductCredits, refundCredits } from "@/lib/db/usage";
 import { creditsFor } from "@/lib/credits";
 import { VideoRequestSchema } from "@/lib/validators";
 
@@ -67,6 +67,8 @@ export async function POST(req: NextRequest) {
       remaining: balance.remaining,
     });
   } catch (err) {
+    console.error("[/api/ai/video] submit failed", err);
+    await refundCredits(user.userId, credits).catch(() => {});
     const message = err instanceof Error ? err.message : "Submission failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }

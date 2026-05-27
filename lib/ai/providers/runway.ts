@@ -21,11 +21,17 @@ function getClient() {
   return _client;
 }
 
-const MODEL_DEFAULT = "gen4_turbo";
+type Gen4TurboRatio =
+  | "1280:720"
+  | "720:1280"
+  | "1104:832"
+  | "832:1104"
+  | "960:960"
+  | "1584:672";
 
-type RunwayRatio = "1280:720" | "720:1280" | "1104:832" | "960:960" | "832:1104" | "1584:672";
+type Veo3Ratio = "1280:720" | "720:1280" | "1080:1920" | "1920:1080";
 
-function mapAspectToRatio(aspect?: VideoGenerateInput["aspectRatio"]): RunwayRatio {
+function toGen4Ratio(aspect?: VideoGenerateInput["aspectRatio"]): Gen4TurboRatio {
   switch (aspect) {
     case "9:16":
       return "720:1280";
@@ -37,7 +43,17 @@ function mapAspectToRatio(aspect?: VideoGenerateInput["aspectRatio"]): RunwayRat
   }
 }
 
-function clampDuration(seconds?: number): 5 | 10 {
+function toVeo3Ratio(aspect?: VideoGenerateInput["aspectRatio"]): Veo3Ratio {
+  switch (aspect) {
+    case "9:16":
+      return "720:1280";
+    case "16:9":
+    default:
+      return "1280:720";
+  }
+}
+
+function clampGen4Duration(seconds?: number): 5 | 10 {
   if (!seconds) return 5;
   return seconds >= 8 ? 10 : 5;
 }
@@ -46,32 +62,29 @@ export async function submit(
   input: VideoGenerateInput
 ): Promise<VideoSubmitResult> {
   const client = getClient();
-  const model = (input.model ?? MODEL_DEFAULT) as "gen4_turbo";
-  const ratio = mapAspectToRatio(input.aspectRatio);
-  const duration = clampDuration(input.durationSeconds);
 
   if (input.mode === "text-to-video") {
     const task = await client.textToVideo.create({
-      model: "veo3" as never,
+      model: "veo3",
       promptText: input.prompt,
-      ratio: ratio === "960:960" ? "1280:720" : (ratio as never),
-      duration: duration === 10 ? 8 : duration,
-    } as never);
+      ratio: toVeo3Ratio(input.aspectRatio),
+      duration: 8,
+    });
     return { externalId: task.id, provider: "runway", model: "veo3" };
   }
 
   if (!input.imageUrl) {
-    throw new Error("Runway image-to-video requires imageUrl");
+    throw new Error("Runway image-to-video requires an imageUrl");
   }
 
   const task = await client.imageToVideo.create({
-    model,
+    model: "gen4_turbo",
     promptImage: input.imageUrl,
     promptText: input.prompt,
-    ratio,
-    duration,
+    ratio: toGen4Ratio(input.aspectRatio),
+    duration: clampGen4Duration(input.durationSeconds),
   });
-  return { externalId: task.id, provider: "runway", model };
+  return { externalId: task.id, provider: "runway", model: "gen4_turbo" };
 }
 
 export async function status(
@@ -89,11 +102,7 @@ export async function status(
       return { status: "processing" };
     case "SUCCEEDED": {
       const url = Array.isArray(task.output) ? task.output[0] : null;
-      return {
-        status: "succeeded",
-        videoUrl: url,
-        thumbnailUrl: null,
-      };
+      return { status: "succeeded", videoUrl: url, thumbnailUrl: null };
     }
     case "FAILED":
       return {
