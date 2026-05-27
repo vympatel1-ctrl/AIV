@@ -1,8 +1,10 @@
-# Aurum Studio · AI Business Content Platform (MVP)
+# AIV · AI Video Studio for Founders
 
-A luxury, dark-mode AI business content studio built on **Next.js 16 App
+An editorial, light-mode AI video studio built on **Next.js 16 App
 Router**, **React 19**, **Tailwind v4**, **shadcn/ui**, **Supabase**,
-**OpenAI**, **fal.ai**, and **ElevenLabs**.
+**OpenAI**, **fal.ai**, **Runway**, and **ElevenLabs**.
+
+> Brand voice, color, and component guidance live in [`BRAND.md`](BRAND.md).
 
 ## What's inside
 

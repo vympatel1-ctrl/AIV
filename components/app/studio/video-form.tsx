@@ -600,7 +600,7 @@ export function VideoForm({
                     )}
                   </div>
 
-                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] leading-relaxed text-amber-200/90">
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/[0.07] p-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-200/90">
                     Heads up: only re-render videos you have rights to. The
                     output keeps the source pacing but swaps identifying
                     details for your brand — not a 1:1 copy.
@@ -700,7 +700,7 @@ export function VideoForm({
                     : startInitialGeneration
                 }
                 disabled={isWorking}
-                variant="gold"
+                variant="ink"
                 size="lg"
                 className="w-full"
               >
@@ -745,7 +745,7 @@ export function VideoForm({
                 />
               </div>
               {provider !== "runway" && (
-                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-200">
                   Switching to Runway is required for refinement. Click below
                   to apply.
                 </div>
@@ -753,7 +753,7 @@ export function VideoForm({
               <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant="gold"
+                  variant="ink"
                   size="lg"
                   className="flex-1"
                   onClick={() => {

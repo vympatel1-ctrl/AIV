@@ -166,7 +166,7 @@ export default async function AssetDetailPage(props: {
                 placeholder="My branded reel"
                 maxLength={200}
               />
-              <Button type="submit" variant="gold">
+              <Button type="submit" variant="ink">
                 Save
               </Button>
             </form>
@@ -199,7 +199,7 @@ export default async function AssetDetailPage(props: {
                   ))}
                 </SelectContent>
               </Select>
-              <Button type="submit" variant="gold">
+              <Button type="submit" variant="ink">
                 Move
               </Button>
             </form>

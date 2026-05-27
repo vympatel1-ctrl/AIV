@@ -80,7 +80,7 @@ export default async function BrandKitsPage() {
               />
             </div>
             <div className="sm:col-span-2 flex justify-end">
-              <Button type="submit" variant="gold">
+              <Button type="submit" variant="ink">
                 Save brand kit
               </Button>
             </div>

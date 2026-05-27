@@ -66,7 +66,7 @@ export default async function LibraryPage(props: {
           </p>
         </div>
         <Link href="/studio/video">
-          <Button variant="gold">
+          <Button variant="ink">
             <SparklesIcon />
             New generation
           </Button>
@@ -103,7 +103,7 @@ export default async function LibraryPage(props: {
           description="Generate something in the studio and it will appear here automatically."
           action={
             <Link href="/studio/video">
-              <Button variant="gold">
+              <Button variant="ink">
                 <SparklesIcon />
                 Open studio
               </Button>

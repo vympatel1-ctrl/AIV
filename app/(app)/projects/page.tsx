@@ -31,7 +31,7 @@ export default async function ProjectsPage(props: {
           </p>
         </div>
         <Link href="/projects/new">
-          <Button variant="gold">
+          <Button variant="ink">
             <PlusIcon />
             New project
           </Button>
@@ -73,7 +73,7 @@ export default async function ProjectsPage(props: {
           description="Create a project to start saving generated assets and organize them into folders."
           action={
             <Link href="/projects/new">
-              <Button variant="gold">
+              <Button variant="ink">
                 <PlusIcon />
                 Create project
               </Button>

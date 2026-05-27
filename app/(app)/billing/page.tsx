@@ -83,13 +83,12 @@ export default function BillingPage() {
             key={p.id}
             className={cn(
               "relative overflow-hidden",
-              p.highlighted &&
-                "border-primary/50 luxury-glow"
+              p.highlighted && "border-primary/40 editorial-shadow"
             )}
           >
             {p.highlighted && (
               <div className="absolute right-3 top-3">
-                <Badge variant="gold">Most popular</Badge>
+                <Badge variant="ink">Most popular</Badge>
               </div>
             )}
             <CardHeader>

@@ -203,7 +203,7 @@ export function ImageForm({ projectId }: { projectId: string | null }) {
             type="button"
             onClick={submit}
             disabled={isPending}
-            variant="gold"
+            variant="ink"
             size="lg"
             className="w-full"
           >

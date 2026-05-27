@@ -137,7 +137,7 @@ export function FlyerForm({ projectId }: { projectId: string | null }) {
                 id="brandName"
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
-                placeholder="Aurum"
+                placeholder="Your brand"
               />
             </div>
             <div className="space-y-2">
@@ -260,7 +260,7 @@ export function FlyerForm({ projectId }: { projectId: string | null }) {
             type="button"
             onClick={submit}
             disabled={isPending}
-            variant="gold"
+            variant="ink"
             size="lg"
             className="w-full"
           >

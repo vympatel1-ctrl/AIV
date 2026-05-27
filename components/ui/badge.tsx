@@ -18,11 +18,15 @@ const badgeVariants = cva(
         outline:
           "text-foreground border-border [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         success:
-          "border-transparent bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20",
+          "border-transparent bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-400",
         warning:
-          "border-transparent bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/20",
+          "border-transparent bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/20 dark:text-amber-400",
+        ink:
+          "border-transparent bg-primary text-primary-foreground",
+        // Back-compat — keep `gold` resolving to ink so existing callers
+        // don't visually break before they're rewritten.
         gold:
-          "border-transparent gold-gradient text-primary-foreground",
+          "border-transparent bg-primary text-primary-foreground",
       },
     },
     defaultVariants: {

@@ -89,7 +89,7 @@ export default async function ProjectDetailPage(props: {
           description="Generate assets from any studio and save them to this project."
           action={
             <Link href={`/studio/copy?projectId=${project.id}`}>
-              <Button variant="gold">Open Copy studio</Button>
+              <Button variant="ink">Open Copy studio</Button>
             </Link>
           }
         />

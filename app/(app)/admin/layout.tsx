@@ -27,27 +27,38 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8">
-      <div>
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          System
-        </p>
-        <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
-          Admin
-        </h1>
+    <div className="mx-auto flex max-w-6xl flex-col gap-10">
+      {/* Editorial title plate */}
+      <div className="flex flex-col gap-5 border-b border-foreground/10 pb-7">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+              System
+            </p>
+            <h1 className="mt-3 font-display text-4xl tracking-tight sm:text-5xl">
+              Admin
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Operations console — usage, billing, and moderation.
+            </p>
+          </div>
+          <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:block">
+            Issue · 01
+          </span>
+        </div>
+        <nav className="flex flex-wrap gap-1.5">
+          {tabs.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-card px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+            >
+              <t.icon className="size-3.5" />
+              {t.label}
+            </Link>
+          ))}
+        </nav>
       </div>
-      <nav className="flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-card px-3 py-1.5 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
-          >
-            <t.icon className="size-3.5" />
-            {t.label}
-          </Link>
-        ))}
-      </nav>
       {children}
     </div>
   );

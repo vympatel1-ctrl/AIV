@@ -65,7 +65,7 @@ export default function NewProjectPage() {
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" variant="gold">
+              <Button type="submit" variant="ink">
                 Create project
               </Button>
             </div>

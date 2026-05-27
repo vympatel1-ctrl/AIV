@@ -3,65 +3,90 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* =============================================================
+ * AIV — Editorial Light brand tokens
+ * Bone backgrounds · charcoal type · ink-blue accent
+ * Inspired by editorial newsrooms (NYT, FT) and Stripe-grade SaaS.
+ * ============================================================= */
+
 :root {
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.18 0.01 270);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.01 270);
+  /* Surfaces */
+  --background: oklch(0.985 0.006 82);     /* bone */
+  --foreground: oklch(0.16 0.018 268);     /* deep charcoal w/ blue cast */
+  --card: oklch(1 0 0);                    /* pure white floats above bone */
+  --card-foreground: oklch(0.16 0.018 268);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.01 270);
-  --primary: oklch(0.78 0.13 85);
-  --primary-foreground: oklch(0.15 0.02 60);
-  --secondary: oklch(0.96 0.005 270);
-  --secondary-foreground: oklch(0.2 0.01 270);
-  --muted: oklch(0.96 0.005 270);
-  --muted-foreground: oklch(0.5 0.01 270);
-  --accent: oklch(0.96 0.005 270);
-  --accent-foreground: oklch(0.2 0.01 270);
-  --destructive: oklch(0.6 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.9 0.005 270);
-  --input: oklch(0.9 0.005 270);
-  --ring: oklch(0.78 0.13 85);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.18 0.01 270);
-  --sidebar-primary: oklch(0.78 0.13 85);
-  --sidebar-primary-foreground: oklch(0.15 0.02 60);
-  --sidebar-accent: oklch(0.96 0.005 270);
-  --sidebar-accent-foreground: oklch(0.2 0.01 270);
-  --sidebar-border: oklch(0.9 0.005 270);
-  --sidebar-ring: oklch(0.78 0.13 85);
+  --popover-foreground: oklch(0.16 0.018 268);
+
+  /* Brand */
+  --primary: oklch(0.40 0.16 264);         /* ink blue */
+  --primary-foreground: oklch(0.985 0.006 82);
+
+  /* Quiet system colors */
+  --secondary: oklch(0.96 0.006 82);       /* warm pale */
+  --secondary-foreground: oklch(0.18 0.015 268);
+  --muted: oklch(0.96 0.006 82);
+  --muted-foreground: oklch(0.46 0.012 268);
+  --accent: oklch(0.94 0.012 82);
+  --accent-foreground: oklch(0.18 0.015 268);
+
+  /* Status */
+  --destructive: oklch(0.55 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.55 0.13 155);
+  --warning: oklch(0.7 0.15 70);
+
+  /* Strokes */
+  --border: oklch(0.88 0.008 82);
+  --input: oklch(0.88 0.008 82);
+  --ring: oklch(0.40 0.16 264 / 35%);
+
+  --radius: 0.5rem;
+
+  /* Sidebar uses a slightly warmer bone */
+  --sidebar: oklch(0.97 0.008 82);
+  --sidebar-foreground: oklch(0.16 0.018 268);
+  --sidebar-primary: oklch(0.40 0.16 264);
+  --sidebar-primary-foreground: oklch(0.985 0.006 82);
+  --sidebar-accent: oklch(0.94 0.012 82);
+  --sidebar-accent-foreground: oklch(0.18 0.015 268);
+  --sidebar-border: oklch(0.88 0.008 82);
+  --sidebar-ring: oklch(0.40 0.16 264 / 35%);
 }
 
 .dark {
-  --background: oklch(0.09 0.005 270);
-  --foreground: oklch(0.96 0.005 80);
-  --card: oklch(0.12 0.008 270);
-  --card-foreground: oklch(0.96 0.005 80);
-  --popover: oklch(0.12 0.008 270);
-  --popover-foreground: oklch(0.96 0.005 80);
-  --primary: oklch(0.82 0.14 85);
-  --primary-foreground: oklch(0.12 0.02 60);
-  --secondary: oklch(0.18 0.008 270);
-  --secondary-foreground: oklch(0.96 0.005 80);
-  --muted: oklch(0.18 0.008 270);
-  --muted-foreground: oklch(0.65 0.01 270);
-  --accent: oklch(0.2 0.01 270);
-  --accent-foreground: oklch(0.96 0.005 80);
-  --destructive: oklch(0.55 0.22 25);
+  --background: oklch(0.13 0.015 270);     /* deep navy charcoal */
+  --foreground: oklch(0.95 0.006 82);
+  --card: oklch(0.16 0.015 270);
+  --card-foreground: oklch(0.95 0.006 82);
+  --popover: oklch(0.16 0.015 270);
+  --popover-foreground: oklch(0.95 0.006 82);
+
+  --primary: oklch(0.72 0.17 260);         /* lifted ink blue for dark */
+  --primary-foreground: oklch(0.13 0.015 270);
+
+  --secondary: oklch(0.20 0.012 270);
+  --secondary-foreground: oklch(0.95 0.006 82);
+  --muted: oklch(0.20 0.012 270);
+  --muted-foreground: oklch(0.66 0.012 268);
+  --accent: oklch(0.22 0.014 270);
+  --accent-foreground: oklch(0.95 0.006 82);
+
+  --destructive: oklch(0.62 0.21 27);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.22 0.01 270 / 60%);
-  --input: oklch(0.22 0.01 270 / 60%);
-  --ring: oklch(0.82 0.14 85);
-  --sidebar: oklch(0.07 0.005 270);
-  --sidebar-foreground: oklch(0.96 0.005 80);
-  --sidebar-primary: oklch(0.82 0.14 85);
-  --sidebar-primary-foreground: oklch(0.12 0.02 60);
-  --sidebar-accent: oklch(0.16 0.008 270);
-  --sidebar-accent-foreground: oklch(0.96 0.005 80);
-  --sidebar-border: oklch(0.2 0.01 270 / 60%);
-  --sidebar-ring: oklch(0.82 0.14 85);
+
+  --border: oklch(0.26 0.014 270 / 70%);
+  --input: oklch(0.26 0.014 270 / 70%);
+  --ring: oklch(0.72 0.17 260 / 45%);
+
+  --sidebar: oklch(0.11 0.015 270);
+  --sidebar-foreground: oklch(0.95 0.006 82);
+  --sidebar-primary: oklch(0.72 0.17 260);
+  --sidebar-primary-foreground: oklch(0.13 0.015 270);
+  --sidebar-accent: oklch(0.18 0.012 270);
+  --sidebar-accent-foreground: oklch(0.95 0.006 82);
+  --sidebar-border: oklch(0.24 0.014 270 / 60%);
+  --sidebar-ring: oklch(0.72 0.17 260 / 45%);
 }
 
 @theme inline {
@@ -108,6 +133,9 @@
     border-color: var(--border);
   }
   html {
+    color-scheme: light;
+  }
+  html.dark {
     color-scheme: dark;
   }
   body {
@@ -115,52 +143,102 @@
     color: var(--foreground);
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: oklch(from var(--primary) l c h / 0.35);
+    background: oklch(from var(--primary) l c h / 0.18);
     color: var(--foreground);
+  }
+
+  /* Editorial display defaults — Instrument Serif looks best with a slight
+   * positive letter-spacing on small sizes, tight on display sizes. */
+  .font-display {
+    font-feature-settings: "ss01", "ss02", "liga", "dlig";
+    letter-spacing: -0.01em;
   }
 }
 
 @layer utilities {
-  .gold-gradient {
+  /* Editorial gradient — soft ink wash, used sparingly behind hero text. */
+  .ink-gradient {
     background: linear-gradient(
       135deg,
-      oklch(0.88 0.14 90) 0%,
-      oklch(0.78 0.16 75) 50%,
-      oklch(0.68 0.13 60) 100%
+      oklch(0.40 0.16 264) 0%,
+      oklch(0.32 0.14 268) 50%,
+      oklch(0.18 0.10 272) 100%
     );
   }
-  .gold-text {
+  .ink-text {
     background: linear-gradient(
       135deg,
-      oklch(0.92 0.13 92) 0%,
-      oklch(0.78 0.15 78) 100%
+      oklch(0.40 0.16 264) 0%,
+      oklch(0.28 0.13 270) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
-  .luxury-border {
-    border: 1px solid oklch(from var(--primary) l c h / 0.18);
+
+  /* Hairline border + tiny offset shadow — newspaper plate feel. */
+  .editorial-border {
+    border: 1px solid oklch(from var(--foreground) l c h / 0.12);
   }
-  .luxury-glow {
+  .editorial-shadow {
     box-shadow:
-      0 0 0 1px oklch(from var(--primary) l c h / 0.1),
-      0 8px 32px -12px oklch(from var(--primary) l c h / 0.2);
+      0 1px 0 0 oklch(from var(--foreground) l c h / 0.04),
+      0 12px 40px -16px oklch(from var(--foreground) l c h / 0.10);
   }
+
+  /* Background grid — for the marketing hero. */
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, oklch(from var(--foreground) l c h / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(from var(--foreground) l c h / 0.045) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+  }
+
+  /* Newsprint grain — kept from before, subtler. */
   .grain::before {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.04;
+    opacity: 0.025;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
+    mix-blend-mode: multiply;
   }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+  }
+
+  /* Marquee — used by components/app/marquee.tsx. */
+  @keyframes aiv-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: aiv-marquee 38s linear infinite;
+  }
+
+  /* Subtle hero word reveal — staggered via inline delay. */
+  @keyframes aiv-rise {
+    from { opacity: 0; transform: translateY(0.6em); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-rise {
+    animation: aiv-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  /* Caret blink — for the "live" dot. */
+  @keyframes aiv-pulse-soft {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+  }
+  .animate-pulse-soft {
+    animation: aiv-pulse-soft 2.4s ease-in-out infinite;
   }
 }
