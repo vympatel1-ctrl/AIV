@@ -10,6 +10,7 @@ import {
   LibraryIcon,
   PaletteIcon,
   PenLineIcon,
+  MicIcon,
   PlayIcon,
   PrinterIcon,
   SettingsIcon,
@@ -36,6 +37,7 @@ const studio: NavItem[] = [
   { href: "/studio/copy", label: "Copy", icon: PenLineIcon },
   { href: "/studio/image", label: "Image", icon: ImageIcon },
   { href: "/studio/video", label: "Video", icon: PlayIcon },
+  { href: "/studio/voice", label: "Voice", icon: MicIcon },
   { href: "/studio/flyer", label: "Print", icon: PrinterIcon },
 ];
 

@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   ImageIcon,
   LibraryIcon,
+  MicIcon,
   PenLineIcon,
   PlayIcon,
   PrinterIcon,
@@ -41,6 +42,12 @@ const quickActions = [
     label: "Generate video",
     description: "Vertical short-form.",
     icon: PlayIcon,
+  },
+  {
+    href: "/studio/voice",
+    label: "Voiceover",
+    description: "Scripts → MP3.",
+    icon: MicIcon,
   },
   {
     href: "/studio/flyer",
@@ -82,7 +89,7 @@ export default async function DashboardPage() {
        * ==================================================== */}
       <section>
         <SectionHeading eyebrow="Start" title="Studios" />
-        <div className="mt-5 grid gap-px overflow-hidden rounded-xl border border-foreground/10 bg-foreground/10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-5 grid gap-px overflow-hidden rounded-xl border border-foreground/10 bg-foreground/10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {quickActions.map((a) => (
             <Link
               key={a.href}

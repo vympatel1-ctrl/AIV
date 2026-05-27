@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CopyIcon, Loader2Icon, SparklesIcon } from "lucide-react";
+import {
+  CopyIcon,
+  Loader2Icon,
+  MicIcon,
+  SparklesIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -215,7 +220,7 @@ export function CopyForm({ projectId }: { projectId: string | null }) {
         ) : result && result.length > 0 ? (
           <div className="flex flex-col gap-3">
             {result.map((item, i) => (
-              <CopyItem key={i} text={item} />
+              <CopyItem key={i} text={item} projectId={projectId} />
             ))}
           </div>
         ) : (
@@ -230,22 +235,67 @@ export function CopyForm({ projectId }: { projectId: string | null }) {
   );
 }
 
-function CopyItem({ text }: { text: string }) {
+function CopyItem({
+  text,
+  projectId,
+}: {
+  text: string;
+  projectId: string | null;
+}) {
+  const [voicing, startVoicing] = useTransition();
+
+  function readAloud() {
+    startVoicing(async () => {
+      try {
+        const res = await fetch("/api/ai/voiceover", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text, projectId }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? `Failed (${res.status})`);
+        toast.success("Voiceover saved.", {
+          description: json.asset?.id
+            ? "Open it from Library → Voiceovers."
+            : undefined,
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Voiceover failed");
+      }
+    });
+  }
+
   return (
     <Card className="group">
       <CardContent className="flex items-start justify-between gap-4">
         <p className="whitespace-pre-line text-sm leading-relaxed">{text}</p>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={async () => {
-            await navigator.clipboard.writeText(text);
-            toast.success("Copied to clipboard");
-          }}
-        >
-          <CopyIcon className="size-3.5" />
-          Copy
-        </Button>
+        <div className="flex shrink-0 flex-col gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await navigator.clipboard.writeText(text);
+              toast.success("Copied to clipboard");
+            }}
+          >
+            <CopyIcon className="size-3.5" />
+            Copy
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={voicing}
+            onClick={readAloud}
+            title="ElevenLabs TTS (3 credits)"
+          >
+            {voicing ? (
+              <Loader2Icon className="size-3.5 animate-spin" />
+            ) : (
+              <MicIcon className="size-3.5" />
+            )}
+            Read aloud
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
