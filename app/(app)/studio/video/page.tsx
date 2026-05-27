@@ -2,18 +2,23 @@ import { PlayIcon } from "lucide-react";
 
 import { VideoForm } from "@/components/app/studio/video-form";
 import { StudioShell } from "@/components/app/studio-shell";
+import { defaultVideoProviderName } from "@/lib/ai/video";
 
 export default async function VideoStudioPage(props: {
   searchParams: Promise<{ projectId?: string }>;
 }) {
   const sp = await props.searchParams;
+  const defaultProvider = defaultVideoProviderName();
   return (
     <StudioShell
       title="Video Studio"
-      description="Animate product images or generate vertical short-form videos. Provider-agnostic."
+      description="Generate, then keep refining. Each tweak is saved as a new version you can revisit."
       icon={PlayIcon}
     >
-      <VideoForm projectId={sp.projectId ?? null} />
+      <VideoForm
+        projectId={sp.projectId ?? null}
+        defaultProvider={defaultProvider}
+      />
     </StudioShell>
   );
 }

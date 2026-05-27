@@ -50,6 +50,52 @@ export async function listRecentAssets(
   return data ?? [];
 }
 
+export async function listAssetsByType(
+  userId: string,
+  type: AssetType | null,
+  opts: { limit?: number; projectId?: string | null } = {}
+): Promise<Asset[]> {
+  const sb = safeClient();
+  if (!sb) return [];
+  let q = sb
+    .from("assets")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(opts.limit ?? 60);
+  if (type) q = q.eq("type", type);
+  if (opts.projectId) q = q.eq("project_id", opts.projectId);
+  const { data, error } = await q;
+  if (error) {
+    console.warn("[listAssetsByType]", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+/**
+ * Returns every asset that shares a lineage_id (the chain of refinements
+ * for a single video edit session), ordered oldest first.
+ */
+export async function listAssetLineage(
+  userId: string,
+  lineageId: string
+): Promise<Asset[]> {
+  const sb = safeClient();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from("assets")
+    .select("*")
+    .eq("user_id", userId)
+    .filter("metadata->>lineage_id", "eq", lineageId)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.warn("[listAssetLineage]", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function createAsset(
   userId: string,
   input: {

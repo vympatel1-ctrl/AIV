@@ -63,6 +63,19 @@ export async function submit(
 ): Promise<VideoSubmitResult> {
   const client = getClient();
 
+  if (input.mode === "video-to-video") {
+    if (!input.videoUrl) {
+      throw new Error("Runway video-to-video requires a videoUrl");
+    }
+    const task = await client.videoToVideo.create({
+      model: "gen4_aleph",
+      promptText: input.prompt,
+      videoUri: input.videoUrl,
+      ratio: toGen4Ratio(input.aspectRatio),
+    });
+    return { externalId: task.id, provider: "runway", model: "gen4_aleph" };
+  }
+
   if (input.mode === "text-to-video") {
     const task = await client.textToVideo.create({
       model: "veo3",

@@ -48,12 +48,16 @@ export const ImageRequestSchema = z.object({
 });
 
 export const VideoRequestSchema = z.object({
-  mode: z.enum(["text-to-video", "image-to-video"]),
+  mode: z.enum(["text-to-video", "image-to-video", "video-to-video"]),
   prompt: z.string().min(2).max(2000),
   imageUrl: z.string().url().nullable().optional(),
+  videoUrl: z.string().url().nullable().optional(),
   aspectRatio: z.enum(["9:16", "16:9", "1:1"]).default("9:16"),
   durationSeconds: z.number().int().min(1).max(20).optional(),
   model: z.string().optional(),
+  provider: z.enum(["fal", "runway"]).optional(),
+  parentAssetId: z.string().uuid().nullable().optional(),
+  lineageId: z.string().uuid().nullable().optional(),
   projectId: z.string().uuid().nullable().optional(),
 });
 

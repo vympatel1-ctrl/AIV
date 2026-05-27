@@ -9,6 +9,7 @@ import {
   ImageIcon,
   LayersIcon,
   LayoutDashboardIcon,
+  LibraryIcon,
   PaletteIcon,
   PenLineIcon,
   PlayIcon,
@@ -28,6 +29,7 @@ type NavItem = {
 
 const main: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
+  { href: "/library", label: "Library", icon: LibraryIcon },
   { href: "/projects", label: "Projects", icon: FolderIcon },
   { href: "/brand-kits", label: "Brand Kits", icon: PaletteIcon },
 ];

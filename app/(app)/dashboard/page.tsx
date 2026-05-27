@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowRightIcon,
   ImageIcon,
+  LibraryIcon,
   PenLineIcon,
   PlayIcon,
   PrinterIcon,
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { listProjects } from "@/lib/db/projects";
-import { listRecentAssets } from "@/lib/db/assets";
+import { listAssetsByType, listRecentAssets } from "@/lib/db/assets";
 import { ProjectCard } from "@/components/app/project-card";
 import { AssetCard } from "@/components/app/asset-card";
 import { EmptyState } from "@/components/app/empty-state";
@@ -52,9 +53,10 @@ const quickActions = [
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  const [projects, assets] = await Promise.all([
+  const [projects, assets, recentVideos] = await Promise.all([
     listProjects(user.userId, { limit: 4 }),
     listRecentAssets(user.userId, 6),
+    listAssetsByType(user.userId, "video", { limit: 4 }),
   ]);
 
   const firstName = (user.profile.full_name ?? user.name).split(" ")[0];
@@ -122,14 +124,45 @@ export default async function DashboardPage() {
         )}
       </section>
 
+      {recentVideos.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-xl">Recent videos</h2>
+            <Link href="/library?type=video">
+              <Button variant="ghost" size="sm">
+                View all
+                <ArrowRightIcon />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {recentVideos.map((a) => (
+              <AssetCard key={a.id} asset={a} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl">Recent generations</h2>
+          <Link href="/library">
+            <Button variant="ghost" size="sm">
+              <LibraryIcon />
+              Open library
+            </Button>
+          </Link>
         </div>
         {assets.length === 0 ? (
           <EmptyState
+            icon={SparklesIcon}
             title="Nothing generated yet"
-            description="Your latest copy, images, and videos will appear here."
+            description="Your latest copy, images, videos, voiceovers, and flyers will appear here automatically."
+            action={
+              <Link href="/studio/video">
+                <Button variant="gold">Open studio</Button>
+              </Link>
+            }
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

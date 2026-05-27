@@ -34,7 +34,17 @@ export async function GET(
     return NextResponse.json({ status: gen.status });
   }
 
-  const provider = getVideoProvider();
+  const promptMeta = gen.prompt as {
+    prompt?: string;
+    aspectRatio?: string;
+    mode?: string;
+    lineageId?: string;
+    parentAssetId?: string | null;
+    provider?: string;
+  };
+  const provider = getVideoProvider(
+    (promptMeta?.provider as "fal" | "runway" | undefined) ?? null
+  );
   try {
     const s = await provider.status(gen.external_id, gen.model);
 
@@ -42,14 +52,18 @@ export async function GET(
       const asset = await createAsset(user.userId, {
         project_id: gen.project_id,
         type: "video",
-        title:
-          (gen.prompt as { prompt?: string })?.prompt?.slice(0, 80) ??
-          "Generated video",
+        title: promptMeta?.prompt?.slice(0, 80) ?? "Generated video",
         file_url: s.videoUrl,
         thumbnail_url: s.thumbnailUrl ?? null,
         mime_type: "video/mp4",
         generation_id: gen.id,
-        metadata: { aspect: (gen.prompt as { aspectRatio?: string })?.aspectRatio },
+        metadata: {
+          aspect: promptMeta?.aspectRatio,
+          mode: promptMeta?.mode,
+          lineage_id: promptMeta?.lineageId ?? null,
+          parent_asset_id: promptMeta?.parentAssetId ?? null,
+          prompt: promptMeta?.prompt,
+        },
       });
       await updateGeneration(gen.id, {
         status: "succeeded",

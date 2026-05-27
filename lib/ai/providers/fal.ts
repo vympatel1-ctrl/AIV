@@ -93,6 +93,11 @@ function buildInput(
 export async function submit(
   input: VideoGenerateInput
 ): Promise<VideoSubmitResult> {
+  if (input.mode === "video-to-video") {
+    throw new Error(
+      "Video-to-video iteration is only available with the Runway provider. Set VIDEO_PROVIDER=runway."
+    );
+  }
   configureOnce();
   const model = pickModel(input);
   try {

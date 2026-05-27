@@ -3,12 +3,14 @@ import "server-only";
 import * as fal from "./providers/fal";
 import * as runway from "./providers/runway";
 
-export type VideoMode = "text-to-video" | "image-to-video";
+export type VideoMode = "text-to-video" | "image-to-video" | "video-to-video";
+export type VideoProviderName = "fal" | "runway";
 
 export type VideoGenerateInput = {
   mode: VideoMode;
   prompt: string;
   imageUrl?: string;
+  videoUrl?: string;
   aspectRatio?: "9:16" | "16:9" | "1:1";
   durationSeconds?: number;
   model?: string;
@@ -33,15 +35,25 @@ export interface VideoProvider {
   status(externalId: string, model: string): Promise<VideoStatus>;
 }
 
-export function getVideoProvider(): VideoProvider {
-  const name = (process.env.VIDEO_PROVIDER ?? "fal").toLowerCase();
-  switch (name) {
-    case "runway":
-      return runway as unknown as VideoProvider;
-    case "fal":
-    default:
-      return fal as unknown as VideoProvider;
-  }
+/**
+ * Resolve a video provider. Explicit `override` wins; otherwise we honor
+ * VIDEO_PROVIDER env, then prefer Runway if a RUNWAY_API_KEY is set.
+ */
+export function getVideoProvider(
+  override?: VideoProviderName | null
+): VideoProvider {
+  const explicit = (override ?? process.env.VIDEO_PROVIDER ?? "").toLowerCase();
+  if (explicit === "runway") return runway as unknown as VideoProvider;
+  if (explicit === "fal") return fal as unknown as VideoProvider;
+  if (process.env.RUNWAY_API_KEY) return runway as unknown as VideoProvider;
+  return fal as unknown as VideoProvider;
+}
+
+export function defaultVideoProviderName(): VideoProviderName {
+  const env = (process.env.VIDEO_PROVIDER ?? "").toLowerCase();
+  if (env === "runway") return "runway";
+  if (env === "fal") return "fal";
+  return process.env.RUNWAY_API_KEY ? "runway" : "fal";
 }
 
 export const DEFAULT_VIDEO_MODEL =
