@@ -33,48 +33,126 @@ function detectPlatform(url: URL): IngestResult["source"] {
   return "direct";
 }
 
+type CobaltResponse = {
+  status?:
+    | "tunnel"
+    | "redirect"
+    | "stream"
+    | "picker"
+    | "error"
+    | "rate-limit"
+    | string;
+  url?: string;
+  picker?: Array<{ url?: string; type?: string }>;
+  error?: { code?: string; context?: { service?: string } } | string;
+  // Fallback (custom resolvers may use a top-level url).
+  text?: string;
+};
+
 /**
  * Resolve a social-platform URL into a direct MP4 URL.
  *
- * We deliberately do NOT bundle a scraper. Instead we hit a user-provided
- * resolver service (RapidAPI / Apify / your own). If `VIDEO_INGEST_RESOLVER_URL`
- * isn't set, we throw a helpful error and the user can fall back to upload.
+ * We don't bundle a scraper (TikTok/IG/YT actively fight scrapers and any
+ * vendored binary would break in days). Instead we POST to a user-configured
+ * resolver. The native protocol is **cobalt** (https://github.com/imputnet/cobalt) —
+ * a one-Docker-line, AGPL-licensed downloader that handles every major
+ * platform. Any cobalt instance (self-hosted or public) works as-is.
  *
- * Expected response shape from the resolver:
- *   { url: "https://..." }   // a direct .mp4 URL we can fetch & re-host
+ * For custom resolvers we also accept a flat `{ url }` response, so you can
+ * still point this at RapidAPI / Apify / a hand-rolled endpoint.
  */
 async function resolveSocialUrl(input: string): Promise<string> {
   const endpoint = process.env.VIDEO_INGEST_RESOLVER_URL;
   if (!endpoint) {
     throw new IngestError(
-      "This is a social-platform link. Configure VIDEO_INGEST_RESOLVER_URL on the server, or upload the MP4 directly.",
+      "We can't import this link automatically yet. Set VIDEO_INGEST_RESOLVER_URL to a cobalt instance (see README), or download the MP4 and upload it here.",
       501
     );
   }
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    accept: "application/json",
+    "user-agent": "aurum-studio/1.0",
+  };
   if (process.env.VIDEO_INGEST_RESOLVER_KEY) {
-    headers["authorization"] = `Bearer ${process.env.VIDEO_INGEST_RESOLVER_KEY}`;
+    headers["authorization"] = `Api-Key ${process.env.VIDEO_INGEST_RESOLVER_KEY}`;
   }
+
+  // cobalt expects `{ url, downloadMode }`. Generic `{ url }` resolvers will
+  // happily ignore the extra field.
+  const body = JSON.stringify({
+    url: input,
+    downloadMode: "auto",
+    filenameStyle: "basic",
+    videoQuality: "1080",
+  });
+
   const res = await fetch(endpoint, {
     method: "POST",
     headers,
-    body: JSON.stringify({ url: input }),
+    body,
     cache: "no-store",
   });
+  const json = (await res.json().catch(() => ({}))) as CobaltResponse;
+
   if (!res.ok) {
+    const detail =
+      typeof json.error === "string"
+        ? json.error
+        : json.error?.code ?? `HTTP ${res.status}`;
     throw new IngestError(
-      `Resolver returned ${res.status}. Try uploading the MP4 directly.`,
+      `Resolver rejected the link (${detail}). Try uploading the MP4 directly.`,
       502
     );
   }
-  const json = (await res.json().catch(() => ({}))) as { url?: string };
-  if (!json.url) {
-    throw new IngestError(
-      "Resolver did not return a video URL. Try uploading the MP4 directly.",
-      502
-    );
+
+  switch (json.status) {
+    case "tunnel":
+    case "redirect":
+    case "stream": {
+      if (!json.url) {
+        throw new IngestError(
+          "Resolver returned no URL. Try uploading the MP4 directly.",
+          502
+        );
+      }
+      return json.url;
+    }
+    case "picker": {
+      const first = json.picker?.find((p) => p.url)?.url;
+      if (!first) {
+        throw new IngestError(
+          "Resolver returned a picker with no items. Upload the MP4 directly.",
+          502
+        );
+      }
+      return first;
+    }
+    case "rate-limit": {
+      throw new IngestError(
+        "Resolver is rate-limited right now. Try again in a minute or upload directly.",
+        429
+      );
+    }
+    case "error": {
+      const code =
+        typeof json.error === "string"
+          ? json.error
+          : json.error?.code ?? "unknown";
+      throw new IngestError(
+        `Resolver couldn't process this link (${code}). Some platforms (Instagram private, age-gated YouTube) require auth. Upload the MP4 directly instead.`,
+        502
+      );
+    }
+    default: {
+      // Custom resolver shape: `{ url: "..." }` with no `status`.
+      if (json.url) return json.url;
+      throw new IngestError(
+        "Resolver returned an unexpected response. Upload the MP4 directly.",
+        502
+      );
+    }
   }
-  return json.url;
 }
 
 function pickExt(contentType: string, url: string): string {

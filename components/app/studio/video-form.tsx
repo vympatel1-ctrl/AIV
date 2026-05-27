@@ -204,9 +204,27 @@ export function VideoForm({
         body: JSON.stringify({ url }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `Ingest failed (${res.status})`);
+      if (!res.ok) {
+        // 501 = resolver not configured. Fall back to a more actionable toast
+        // that nudges the user toward the upload path.
+        if (res.status === 501) {
+          toast.error("No video resolver configured.", {
+            description:
+              "Click 'or upload an MP4' below, or set VIDEO_INGEST_RESOLVER_URL on the server (cobalt instance).",
+            action: {
+              label: "Upload MP4",
+              onClick: () => videoFileInputRef.current?.click(),
+            },
+            duration: 8000,
+          });
+          return;
+        }
+        throw new Error(json.error ?? `Ingest failed (${res.status})`);
+      }
       setSourceVideoUrl(json.videoUrl);
-      setSourceLabel(`${json.source ?? "link"} · ${(json.bytes / 1_000_000).toFixed(1)} MB`);
+      setSourceLabel(
+        `${json.source ?? "link"} · ${(json.bytes / 1_000_000).toFixed(1)} MB`
+      );
       toast.success("Video imported.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ingest failed");
@@ -525,11 +543,20 @@ export function VideoForm({
                         {!socialIngestEnabled && (
                           <p className="text-[11px] text-muted-foreground">
                             Direct video URLs work out of the box. To import
-                            from TikTok / Instagram / YouTube directly, set{" "}
+                            from TikTok / Instagram / YouTube, point{" "}
                             <code className="rounded bg-muted px-1">
                               VIDEO_INGEST_RESOLVER_URL
                             </code>{" "}
-                            on the server.
+                            at a{" "}
+                            <a
+                              href="https://github.com/imputnet/cobalt"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="underline underline-offset-2"
+                            >
+                              cobalt
+                            </a>{" "}
+                            instance — or just upload the MP4 below.
                           </p>
                         )}
                       </div>
