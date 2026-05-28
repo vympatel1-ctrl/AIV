@@ -250,34 +250,9 @@ drop policy if exists "uploads_owner_delete" on storage.objects;
 create policy "uploads_owner_delete" on storage.objects for delete
   using (bucket_id = 'uploads' and auth.uid()::text = owner::text);
 
--- ----------------------------------------------------------------------
--- MOCK USER SEED
--- ----------------------------------------------------------------------
--- For the MVP we sign in via a cookie, not Supabase Auth. The server uses
--- the SERVICE ROLE key, which bypasses RLS, so we just need a profiles
--- row matching MOCK_USER_ID. (Real Supabase Auth wires this up via a
--- trigger on auth.users — left as TODO when you turn auth back on.)
-
-insert into public.profiles (id, email, full_name, role, credits)
-values (
-  '00000000-0000-0000-0000-000000000001',
-  'demo@aiv.app',
-  'Demo Founder',
-  'admin',
-  500
-)
-on conflict (id) do nothing;
-
-insert into public.subscriptions (user_id, plan, status, monthly_credits)
-values (
-  '00000000-0000-0000-0000-000000000001',
-  'pro',
-  'active',
-  500
-)
-on conflict (user_id) do nothing;
-
 -- =============================================================
 -- Done. Now plug NEXT_PUBLIC_SUPABASE_URL, anon key, and
--- SUPABASE_SERVICE_ROLE_KEY into your .env.local and ship.
+-- SUPABASE_SERVICE_ROLE_KEY into your .env.local, then run
+-- supabase/migrations/002_auth_payments.sql for the auth +
+-- billing tables.
 -- =============================================================

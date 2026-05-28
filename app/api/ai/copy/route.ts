@@ -6,7 +6,7 @@ import { createGeneration, updateGeneration } from "@/lib/db/generations";
 import { createAsset } from "@/lib/db/assets";
 import { deductCredits, logUsage, refundCredits } from "@/lib/db/usage";
 import { COPY_KIND_LABELS } from "@/lib/ai/prompts";
-import { creditsFor, costFor } from "@/lib/credits";
+import { getGenerationCost } from "@/lib/credits";
 import { CopyRequestSchema } from "@/lib/validators";
 import { PLATFORMS } from "@/lib/platform-presets";
 
@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
     );
   }
   const input = parsed.data;
-  const credits = creditsFor("copy", input.count ?? 5);
+  const cost = getGenerationCost({ kind: "copy", count: input.count ?? 5 });
+  const credits = cost.credits;
 
   const balance = await deductCredits(user.userId, credits);
   if (!balance.ok) {
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
       kind: "copy",
       model: OPENAI_TEXT_MODEL,
       credits,
-      cost_usd: costFor("copy", input.count ?? 5),
+      cost_usd: cost.rawCostUsd,
     });
 
     return NextResponse.json({

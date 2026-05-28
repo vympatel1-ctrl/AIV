@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/app/logo";
 import { Marquee } from "@/components/app/marquee";
-import { signInMock } from "@/app/auth-actions";
 
 const platforms = [
   "TikTok",
@@ -108,12 +107,19 @@ export default function LandingPage() {
             Pricing
           </a>
         </nav>
-        <form action={signInMock}>
-          <Button type="submit" variant="ink" size="sm">
-            Sign in
-            <ArrowRightIcon />
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <Link href="/auth/login">
+            <Button variant="ghost" size="sm">
+              Sign in
+            </Button>
+          </Link>
+          <Link href="/auth/signup">
+            <Button variant="ink" size="sm">
+              Get started
+              <ArrowRightIcon />
+            </Button>
+          </Link>
+        </div>
       </header>
 
       {/* ============================================================
@@ -167,12 +173,12 @@ export default function LandingPage() {
             className="animate-rise mt-10 flex flex-col items-center gap-3 sm:flex-row"
             style={{ animationDelay: "560ms" }}
           >
-            <form action={signInMock}>
-              <Button type="submit" size="xl" variant="ink">
+            <Link href="/auth/signup">
+              <Button size="xl" variant="ink">
                 Enter the studio
                 <ArrowRightIcon />
               </Button>
-            </form>
+            </Link>
             <Link href="#ways">
               <Button size="xl" variant="outline">
                 See how it works
@@ -309,12 +315,12 @@ export default function LandingPage() {
               your reel both feel like you.
             </p>
             <div className="mt-7">
-              <form action={signInMock}>
-                <Button type="submit" variant="ink" size="lg">
+              <Link href="/auth/signup">
+                <Button variant="ink" size="lg">
                   Build your brand kit
                   <ArrowRightIcon />
                 </Button>
-              </form>
+              </Link>
             </div>
           </div>
 
@@ -384,11 +390,11 @@ export default function LandingPage() {
                 <ArrowRightIcon />
               </Button>
             </Link>
-            <form action={signInMock}>
-              <Button type="submit" size="lg" variant="outline">
+            <Link href="/auth/signup">
+              <Button size="lg" variant="outline">
                 Try the studio
               </Button>
-            </form>
+            </Link>
           </div>
         </div>
       </section>

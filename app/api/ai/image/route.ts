@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { createGeneration, updateGeneration } from "@/lib/db/generations";
 import { createAsset } from "@/lib/db/assets";
 import { deductCredits, logUsage, refundCredits } from "@/lib/db/usage";
-import { creditsFor, costFor } from "@/lib/credits";
+import { getGenerationCost } from "@/lib/credits";
 import { ImageRequestSchema } from "@/lib/validators";
 import {
   ASPECT_TO_OPENAI_SIZE,
@@ -29,7 +29,13 @@ export async function POST(req: NextRequest) {
   }
   const input = parsed.data;
 
-  const credits = creditsFor("image", input.n);
+  const cost = getGenerationCost({
+    kind: "image",
+    quality: input.quality,
+    aspect: input.aspect,
+    n: input.n,
+  });
+  const credits = cost.credits;
   const balance = await deductCredits(user.userId, credits);
   if (!balance.ok) {
     return NextResponse.json(
@@ -117,8 +123,8 @@ export async function POST(req: NextRequest) {
       kind: "image",
       model: OPENAI_IMAGE_MODEL,
       credits,
-      cost_usd: costFor("image", input.n),
-      metadata: { aspect: input.aspect },
+      cost_usd: cost.rawCostUsd,
+      metadata: { aspect: input.aspect, quality: input.quality, n: input.n },
     });
 
     return NextResponse.json({

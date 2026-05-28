@@ -75,9 +75,47 @@ export async function listUserUsage(
   return data ?? [];
 }
 
+type LedgerContext = {
+  reason?:
+    | "signup_bonus"
+    | "pack_purchase"
+    | "subscription_grant"
+    | "generation"
+    | "refund"
+    | "admin_adjust";
+  generationId?: string | null;
+  paymentId?: string | null;
+  metadata?: Json | null;
+};
+
+async function appendLedger(
+  userId: string,
+  delta: number,
+  balanceAfter: number,
+  ctx?: LedgerContext
+): Promise<void> {
+  const sb = safeClient();
+  if (!sb) return;
+  const { error } = await sb.from("credit_ledger").insert({
+    user_id: userId,
+    delta,
+    reason: ctx?.reason ?? (delta >= 0 ? "admin_adjust" : "generation"),
+    generation_id: ctx?.generationId ?? null,
+    payment_id: ctx?.paymentId ?? null,
+    balance_after: balanceAfter,
+    metadata: ctx?.metadata ?? null,
+  });
+  if (error) {
+    // ledger writes are best-effort during the studio flow; surfacing the
+    // error to the user would block their generation, which is worse.
+    console.warn("[credit_ledger.insert]", error.message);
+  }
+}
+
 export async function refundCredits(
   userId: string,
-  amount: number
+  amount: number,
+  ctx?: LedgerContext
 ): Promise<void> {
   const sb = safeClient();
   if (!sb) return;
@@ -87,18 +125,24 @@ export async function refundCredits(
     .eq("id", userId)
     .single();
   if (!profile) return;
+  const next = profile.credits + amount;
   await sb
     .from("profiles")
     .update({
-      credits: profile.credits + amount,
+      credits: next,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);
+  await appendLedger(userId, amount, next, {
+    ...ctx,
+    reason: ctx?.reason ?? "refund",
+  });
 }
 
 export async function deductCredits(
   userId: string,
-  amount: number
+  amount: number,
+  ctx?: LedgerContext
 ): Promise<{ ok: boolean; remaining: number }> {
   const sb = safeClient();
   if (!sb) return { ok: true, remaining: 0 };
@@ -124,5 +168,9 @@ export async function deductCredits(
     console.warn("[deductCredits]", uErr.message);
     return { ok: false, remaining: profile.credits };
   }
+  await appendLedger(userId, -amount, remaining, {
+    ...ctx,
+    reason: ctx?.reason ?? "generation",
+  });
   return { ok: true, remaining };
 }

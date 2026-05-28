@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { createGeneration, updateGeneration } from "@/lib/db/generations";
 import { createAsset } from "@/lib/db/assets";
 import { deductCredits, logUsage, refundCredits } from "@/lib/db/usage";
-import { creditsFor, costFor } from "@/lib/credits";
+import { getGenerationCost } from "@/lib/credits";
 import { VoiceoverRequestSchema } from "@/lib/validators";
 import { uploadToAssets } from "@/lib/storage";
 
@@ -23,7 +23,11 @@ export async function POST(req: NextRequest) {
     );
   }
   const input = parsed.data;
-  const credits = creditsFor("voiceover", 1);
+  const cost = getGenerationCost({
+    kind: "voiceover",
+    charLength: input.text.length,
+  });
+  const credits = cost.credits;
 
   const balance = await deductCredits(user.userId, credits);
   if (!balance.ok) {
@@ -83,7 +87,8 @@ export async function POST(req: NextRequest) {
       kind: "voiceover",
       model: DEFAULT_MODEL_ID,
       credits,
-      cost_usd: costFor("voiceover", 1),
+      cost_usd: cost.rawCostUsd,
+      metadata: { char_length: input.text.length },
     });
 
     return NextResponse.json({

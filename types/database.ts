@@ -95,12 +95,48 @@ export type Subscription = {
   user_id: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  stripe_price_id: string | null;
   plan: "free" | "starter" | "pro" | "business";
   status: string;
+  current_period_start: string | null;
   current_period_end: string | null;
+  cancel_at_period_end: boolean;
   monthly_credits: number;
   created_at: string;
   updated_at: string;
+};
+
+export type Payment = {
+  id: string;
+  user_id: string;
+  stripe_session_id: string;
+  stripe_payment_intent: string | null;
+  pack_id: string | null;
+  amount_usd: number;
+  credits_granted: number;
+  status: "completed" | "refunded" | "failed";
+  metadata: Json | null;
+  created_at: string;
+};
+
+export type CreditLedgerReason =
+  | "signup_bonus"
+  | "pack_purchase"
+  | "subscription_grant"
+  | "generation"
+  | "refund"
+  | "admin_adjust";
+
+export type CreditLedgerEntry = {
+  id: string;
+  user_id: string;
+  delta: number;
+  reason: CreditLedgerReason;
+  generation_id: string | null;
+  payment_id: string | null;
+  balance_after: number;
+  metadata: Json | null;
+  created_at: string;
 };
 
 export type UsageEvent = {
@@ -175,6 +211,18 @@ export type Database = {
         Row: UsageEvent;
         Insert: Insert<UsageEvent>;
         Update: Update<UsageEvent>;
+        Relationships: [];
+      };
+      payments: {
+        Row: Payment;
+        Insert: Insert<Payment>;
+        Update: Update<Payment>;
+        Relationships: [];
+      };
+      credit_ledger: {
+        Row: CreditLedgerEntry;
+        Insert: Insert<CreditLedgerEntry>;
+        Update: Update<CreditLedgerEntry>;
         Relationships: [];
       };
     };

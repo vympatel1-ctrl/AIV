@@ -24,19 +24,18 @@ Router**, **React 19**, **Tailwind v4**, **shadcn/ui**, **Supabase**,
 - **Billing** — pricing-tiers page (Stripe intentionally **not** wired
   for the MVP).
 
-## Mock auth (intentional MVP shortcut)
+## Auth + billing (live)
 
-Real Supabase Auth and Stripe are intentionally skipped. Clicking
-**"Sign In"** sets a cookie and routes to `/dashboard`, where every
-server-side query uses the Supabase **service role** with a hard-coded
-mock user id. When you turn real auth back on:
-
-1. Replace `lib/auth/mock.ts` with the equivalent helper backed by
-   `lib/supabase/server.ts` (`supabase.auth.getUser()`).
-2. Swap every `createAdminClient()` in `lib/db/*.ts` for the
-   cookie-aware server client. RLS will take over.
-3. Add a `handle_new_user` trigger on `auth.users` that inserts into
-   `public.profiles` (commented out in `schema.sql`).
+- **Auth**: Supabase Auth — email/password + Google OAuth. Session
+  refresh runs in `proxy.ts` (Next.js 16's renamed middleware). New
+  signups get **200 free credits** via the `handle_new_user` trigger.
+- **Billing**: Stripe Checkout for one-off credit packs (Spark $10 /
+  Creator $25 / Studio $75 / Scale $200) and a recurring **Pro** plan
+  ($29/mo, 3,500 monthly credits). All flows are idempotent and audited
+  via the `payments` + `credit_ledger` tables.
+- **Pricing math**: 1 credit = $0.01 retail; every generation is priced
+  at ~10× our raw API spend, so the gross margin floor is ≥90% even
+  after the 25% bonus on the biggest pack.
 
 ## Local development
 
@@ -47,16 +46,46 @@ npm run build                       # what we verify before pushing
 npm run dev
 ```
 
-## Provisioning
+## Launch checklist (one-time setup)
 
-1. **Supabase**: create a project; in the SQL editor, paste and run
-   [`supabase/schema.sql`](supabase/schema.sql) once. It creates all
-   tables, RLS, two storage buckets (`assets` public, `uploads` private),
-   and seeds the mock user profile.
-2. **OpenAI**: create an API key with image + chat scope.
-3. **fal.ai**: create an API key (`FAL_KEY`).
-4. **ElevenLabs**: create an API key. Pick a voice id (default `JBFqnCBsd6RMkjVDRZzb` = "George").
-5. Paste all values into `.env.local` (template is `.env.local.example`).
+1. **Supabase project**
+   1. Create the project; copy URL + anon + service role keys into
+      `.env.local`.
+   2. SQL editor → paste & run [`supabase/schema.sql`](supabase/schema.sql)
+      (base tables + RLS + storage buckets).
+   3. SQL editor → paste & run
+      [`supabase/migrations/002_auth_payments.sql`](supabase/migrations/002_auth_payments.sql)
+      (auth trigger, payments, credit ledger).
+   4. (Optional) Auto-promote founders to admin on signup:
+      `alter database postgres set app.admin_emails = 'you@you.com';`
+2. **Supabase Auth**
+   1. Authentication → Providers → enable **Email** (turn email
+      confirmations on for production).
+   2. Authentication → Providers → enable **Google**; paste Google
+      OAuth client id + secret (see step 3).
+   3. Authentication → URL Configuration → Site URL =
+      `https://<your-domain>`, add `https://<your-domain>/auth/callback`
+      under "Redirect URLs".
+3. **Google OAuth client**
+   - Google Cloud Console → APIs & Services → Credentials → create
+     OAuth 2.0 Client (Web). Authorized redirect URI =
+     `https://<project-ref>.supabase.co/auth/v1/callback`.
+4. **OpenAI / fal.ai / ElevenLabs** — create API keys, paste into
+   `.env.local`. ElevenLabs default voice = `JBFqnCBsd6RMkjVDRZzb`
+   ("George").
+5. **Stripe**
+   1. Products → create 4 one-time packs and 1 recurring Product for
+      Pro at $29/mo. Copy 5 Price IDs into the matching
+      `STRIPE_PRICE_*` env vars.
+   2. Developers → API keys → copy secret + publishable keys.
+   3. Developers → Webhooks → add endpoint
+      `https://<your-domain>/api/stripe/webhook` listening for:
+      `checkout.session.completed`, `invoice.paid`,
+      `customer.subscription.created`, `customer.subscription.updated`,
+      `customer.subscription.deleted`. Copy the signing secret into
+      `STRIPE_WEBHOOK_SECRET`.
+6. **Vercel** — paste every key from `.env.local.example` into Project
+   Settings → Environment Variables (Production + Preview), then deploy.
 
 ## Deploying to Vercel
 
@@ -145,8 +174,10 @@ tab works for any video up to 200 MB.
 
 ## What's intentionally TODO
 
-- **Stripe**: subscription checkout + webhook (table is ready).
-- **Real Supabase Auth**: scaffolding present; cookie-based `mock` to
-  swap.
+- **Priority queue** for Pro subscribers (currently a metadata flag).
+- **Refund automation** — refunds happen in the Stripe dashboard;
+  webhook can be extended to write a `refund` ledger entry.
 - **OpenAI moderation** in `/api/ai/*` to populate the moderation queue.
-- **PDF export** for flyers (jspdf is installed, plumb into the flyer card).
+- **PDF export** for flyers (jspdf is installed, plumb into the flyer
+  card).
+- **Annual subscription tier** + proration logic.

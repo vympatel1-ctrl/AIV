@@ -7,8 +7,12 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { getBrandKit } from "@/lib/db/brand-kits";
 import { createGeneration } from "@/lib/db/generations";
 import { deductCredits, refundCredits } from "@/lib/db/usage";
-import { creditsFor } from "@/lib/credits";
+import { getGenerationCost } from "@/lib/credits";
 import { VideoRequestSchema } from "@/lib/validators";
+import {
+  DEFAULT_TEXT_VIDEO_MODEL,
+  DEFAULT_VIDEO_MODEL,
+} from "@/lib/ai/video";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,7 +40,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const credits = creditsFor("video", 1);
+  // Price the job up front using the user-supplied model + duration so the
+  // charge matches what the provider will actually bill us.
+  const resolvedModel =
+    input.model ??
+    (input.mode === "image-to-video"
+      ? DEFAULT_VIDEO_MODEL
+      : DEFAULT_TEXT_VIDEO_MODEL);
+  const cost = getGenerationCost({
+    kind: "video",
+    model: resolvedModel,
+    durationSeconds: input.durationSeconds,
+    mode: input.mode,
+  });
+  const credits = cost.credits;
   const balance = await deductCredits(user.userId, credits);
   if (!balance.ok) {
     return NextResponse.json(

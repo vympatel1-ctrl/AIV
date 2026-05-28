@@ -7,7 +7,7 @@ import {
   updateGeneration,
 } from "@/lib/db/generations";
 import { logUsage } from "@/lib/db/usage";
-import { costFor } from "@/lib/credits";
+import { getGenerationCost } from "@/lib/credits";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { persistRemoteFileToAssets } from "@/lib/storage";
 
@@ -106,13 +106,27 @@ export async function GET(
         },
         completed_at: new Date().toISOString(),
       });
+      const promptDuration =
+        typeof (gen.prompt as { durationSeconds?: number })?.durationSeconds ===
+        "number"
+          ? ((gen.prompt as { durationSeconds?: number }).durationSeconds as number)
+          : undefined;
+      const promptMode =
+        (gen.prompt as { mode?: "text-to-video" | "image-to-video" | "video-to-video" })
+          ?.mode;
+      const videoCost = getGenerationCost({
+        kind: "video",
+        model: gen.model,
+        durationSeconds: promptDuration,
+        mode: promptMode,
+      });
       await logUsage({
         user_id: user.userId,
         generation_id: gen.id,
         kind: "video",
         model: gen.model,
         credits: gen.credits_cost,
-        cost_usd: costFor("video", 1),
+        cost_usd: videoCost.rawCostUsd,
       });
       return NextResponse.json({
         status: "succeeded",

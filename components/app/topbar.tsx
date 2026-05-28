@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { signOutMock } from "@/app/auth-actions";
+import { signOut } from "@/app/auth/actions";
 import { CreditMeter } from "./credit-meter";
 
 export function Topbar({
@@ -84,7 +84,7 @@ export function Topbar({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild variant="destructive">
-              <form action={signOutMock} className="w-full">
+              <form action={signOut} className="w-full">
                 <button
                   type="submit"
                   className="flex w-full items-center gap-2 text-sm"
